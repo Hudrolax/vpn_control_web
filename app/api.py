@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from .models import ModeRequest, SelectRequest
+from .models import SERVER_ID_PATTERN, ModeRequest, SelectRequest
 from .ssh_client import CommandTimeout, SSHError
 from .vpnctl import VpnctlBusy, VpnctlError
 
@@ -51,7 +51,7 @@ async def get_logs(request: Request, limit: int = Query(default=50, ge=1, le=500
 @router.get("/history")
 async def get_history(
     request: Request,
-    server_id: str | None = Query(default=None, pattern=r"^sub-[A-Za-z0-9._-]{1,64}$"),
+    server_id: str | None = Query(default=None, pattern=SERVER_ID_PATTERN),
     hours: int = Query(default=24, ge=1, le=24 * 30),
 ):
     points = await request.app.state.db.history(server_id, hours)
@@ -69,7 +69,10 @@ async def post_refresh(request: Request, force: bool = Query(default=False)):
 
 
 @router.post("/check")
-async def post_check(request: Request, server_id: str | None = Query(default=None, pattern=r"^sub-[A-Za-z0-9._-]{1,64}$")):
+async def post_check(
+    request: Request,
+    server_id: str | None = Query(default=None, pattern=SERVER_ID_PATTERN),
+):
     try:
         result = await request.app.state.vpnctl.check(server_id)
     except Exception as exc:  # noqa: BLE001

@@ -81,5 +81,5 @@ class Poller:
             self._wakeup.clear()
             try:
                 await asyncio.wait_for(self._wakeup.wait(), timeout=delay)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass

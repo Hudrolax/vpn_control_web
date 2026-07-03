@@ -36,13 +36,15 @@ class VpnctlClient:
     def _parse(result: CommandResult, cmd: str) -> dict[str, Any]:
         text = result.stdout.strip()
         if not text:
-            raise VpnctlError("empty_response", f"vpnctl {cmd}: empty stdout, stderr={result.stderr.strip()[:200]}")
+            stderr = result.stderr.strip()[:200]
+            raise VpnctlError("empty_response", f"vpnctl {cmd}: empty stdout, stderr={stderr}")
         try:
             data = json.loads(text)
         except json.JSONDecodeError as exc:
             raise VpnctlError("bad_json", f"vpnctl {cmd}: non-JSON output: {text[:200]}") from exc
         if not isinstance(data, dict):
-            raise VpnctlError("bad_json", f"vpnctl {cmd}: expected object, got {type(data).__name__}")
+            got = type(data).__name__
+            raise VpnctlError("bad_json", f"vpnctl {cmd}: expected object, got {got}")
         if not data.get("ok", False):
             code = str(data.get("error", "unknown"))
             message = str(data.get("message", ""))

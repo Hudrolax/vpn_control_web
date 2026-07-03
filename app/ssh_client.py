@@ -88,15 +88,16 @@ class OpenWrtSSH:
                         conn.run(command, check=False),
                         timeout=cmd_timeout,
                     )
-                except asyncio.TimeoutError as exc:
+                except TimeoutError as exc:
                     raise CommandTimeout(
                         f"command timed out after {cmd_timeout}s: {command}"
                     ) from exc
-        except (asyncssh.Error, OSError, asyncio.TimeoutError) as exc:
+        except (TimeoutError, asyncssh.Error, OSError) as exc:
             raise SSHError(f"ssh to {self._host} failed: {exc}") from exc
 
-        stdout = proc.stdout if isinstance(proc.stdout, str) else proc.stdout.decode(errors="replace")
-        stderr = proc.stderr if isinstance(proc.stderr, str) else proc.stderr.decode(errors="replace")
+        raw_out, raw_err = proc.stdout, proc.stderr
+        stdout = raw_out if isinstance(raw_out, str) else raw_out.decode(errors="replace")
+        stderr = raw_err if isinstance(raw_err, str) else raw_err.decode(errors="replace")
         exit_code = int(proc.exit_status if proc.exit_status is not None else -1)
         log.info(
             "ssh exec done",
