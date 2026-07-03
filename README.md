@@ -23,11 +23,20 @@ OpenWrt: vpnctl status|list|refresh|check|mode|select|enable|disable|logs  (вс
 
 ## Запуск web (VM 101)
 
-1. `git clone` в `/opt/vpn_control_web`, `cp .env.example .env`.
-2. `ssh/id_ed25519` (0600) — ключ, чей pub добавлен в authorized_keys OpenWrt с forced command;
-   `ssh/known_hosts` — `ssh-keyscan 192.168.253.112`.
-3. `mkdir -p data && chown 10001:10001 data` (SQLite).
-4. `docker compose up -d --build` → `http://192.168.2.22:8090/`.
+Прод разворачивается из GitHub (`git@github.com:Hudrolax/vpn_control_web.git`) в
+`/srv/vpn_control_web`. Root на VM 101 использует отдельный deploy-ключ
+`~/.ssh/id_ed25519_vpn_control_web_deploy` (read-only deploy key в репозитории, привязан
+через `~/.ssh/config` к `Host github.com`) — не путать с ключом `ssh/id_ed25519` внутри
+проекта, который аутентифицирует контейнер на OpenWrt.
+
+1. `git clone git@github.com:Hudrolax/vpn_control_web.git /srv/vpn_control_web`.
+2. `cp .env.example .env` (или скопировать существующий `.env` при переезде).
+3. `mkdir -p ssh data`; в `ssh/` — `id_ed25519` (0600, pub уже в authorized_keys OpenWrt
+   с forced command) и `known_hosts` (`ssh-keyscan 192.168.253.112`).
+4. `chown -R 10001:10001 ssh data` (UID контейнера).
+5. `docker compose up -d --build` → `http://192.168.2.22:8090/`.
+
+Обновление: `git pull && docker compose up -d --build`.
 
 Авторизации нет: порт публикуется только на management-LAN адресе — это и есть контроль доступа.
 
