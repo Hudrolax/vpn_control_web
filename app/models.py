@@ -8,6 +8,11 @@ SERVER_ID_PATTERN = r"^sub-[A-Za-z0-9._-]{1,64}$"
 
 Mode = Literal["auto-sticky", "auto-best", "manual"]
 
+# Refresh periods selectable in the UI: 1h, 4h, 6h, 12h, 24h.
+RefreshInterval = Literal[3600, 14400, 21600, 43200, 86400]
+
+SUBSCRIPTION_URL_PATTERN = r"^https?://[A-Za-z0-9._~:/?#@!$&()*+,;=%-]+$"
+
 
 class SelectedServer(BaseModel):
     id: str
@@ -25,6 +30,8 @@ class SubscriptionInfo(BaseModel):
     last_refresh: int | None = None
     server_count: int = 0
     last_error: str | None = None
+    refresh_interval_sec: int | None = None
+    url_host: str | None = None
 
 
 class ServicesInfo(BaseModel):
@@ -81,6 +88,14 @@ class ModeRequest(BaseModel):
 
 class SelectRequest(BaseModel):
     id: str = Field(pattern=SERVER_ID_PATTERN)
+
+
+class SubscriptionUrlRequest(BaseModel):
+    url: str = Field(pattern=SUBSCRIPTION_URL_PATTERN, max_length=1024)
+
+
+class RefreshIntervalRequest(BaseModel):
+    interval_sec: RefreshInterval
 
 
 class HistoryPoint(BaseModel):

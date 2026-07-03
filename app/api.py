@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from .models import SERVER_ID_PATTERN, ModeRequest, SelectRequest
+from .models import (
+    SERVER_ID_PATTERN,
+    ModeRequest,
+    RefreshIntervalRequest,
+    SelectRequest,
+    SubscriptionUrlRequest,
+)
 from .ssh_client import CommandTimeout, SSHError
 from .vpnctl import VpnctlBusy, VpnctlError
 
@@ -62,6 +68,26 @@ async def get_history(
 async def post_refresh(request: Request, force: bool = Query(default=False)):
     try:
         result = await request.app.state.vpnctl.refresh(force=force)
+    except Exception as exc:  # noqa: BLE001
+        raise _http_error(exc) from exc
+    request.app.state.poller.poke()
+    return result
+
+
+@router.post("/subscription/url")
+async def post_subscription_url(request: Request, body: SubscriptionUrlRequest):
+    try:
+        result = await request.app.state.vpnctl.set_subscription_url(body.url)
+    except Exception as exc:  # noqa: BLE001
+        raise _http_error(exc) from exc
+    request.app.state.poller.poke()
+    return result
+
+
+@router.post("/subscription/interval")
+async def post_subscription_interval(request: Request, body: RefreshIntervalRequest):
+    try:
+        result = await request.app.state.vpnctl.set_refresh_interval(body.interval_sec)
     except Exception as exc:  # noqa: BLE001
         raise _http_error(exc) from exc
     request.app.state.poller.poke()

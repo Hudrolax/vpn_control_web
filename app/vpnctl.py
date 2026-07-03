@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 import logging
 from typing import Any
@@ -65,6 +66,14 @@ class VpnctlClient:
     async def refresh(self, force: bool = False) -> dict[str, Any]:
         args = ["refresh", "--force"] if force else ["refresh"]
         return await self._call(*args, timeout_sec=120)
+
+    async def set_subscription_url(self, url: str) -> dict[str, Any]:
+        # base64 keeps the URL within the ssh forced-command whitelist charset.
+        encoded = base64.b64encode(url.encode()).decode()
+        return await self._call("set-url", encoded, timeout_sec=120)
+
+    async def set_refresh_interval(self, interval_sec: int) -> dict[str, Any]:
+        return await self._call("set-interval", str(interval_sec))
 
     async def check(self, server_id: str | None = None) -> dict[str, Any]:
         args = ["check"] if server_id is None else ["check", server_id]

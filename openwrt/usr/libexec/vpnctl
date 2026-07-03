@@ -33,6 +33,8 @@ cmd_status() {
     --arg singbox "$(service_state "$SINGBOX_SERVICE")" \
     --arg pbr "$(pbr_state)" \
     --argjson last_refresh "$(last_refresh_ts)" \
+    --argjson refresh_interval "$(cfg '.refresh_min_interval_sec' 86400)" \
+    --arg url_host "$(sed -E 's#^[a-z]+://([^/:?]+).*#\1#' "$SUB_URL_FILE" 2>/dev/null | head -n 1)" \
     '{
       ok: true,
       enabled: $state.enabled,
@@ -47,7 +49,9 @@ cmd_status() {
       subscription: {
         last_refresh: (if $last_refresh == 0 then null else $last_refresh end),
         server_count: ($servers | length),
-        last_error: ($runtime.subscription_error // null)
+        last_error: ($runtime.subscription_error // null),
+        refresh_interval_sec: $refresh_interval,
+        url_host: (if $url_host == "" then null else $url_host end)
       },
       services: {xray: $xray, singbox: $singbox, pbr: $pbr},
       busy: $busy,
@@ -83,6 +87,62 @@ cmd_refresh() {
   _out="$(do_refresh "$_force")" || { runtime_set '{"busy": null}'; exit 1; }
   runtime_set '{"busy": null}'
   printf '%s\n' "$_out"
+}
+
+cmd_set_url() {
+  # set-url <base64-of-url>: base64 keeps the URL free of shell/ssh-whitelist
+  # metacharacters. Downloads immediately; reverts to the old URL on failure.
+  _b64="$1"
+  [ -n "$_b64" ] || fail bad_args "set-url requires a base64-encoded url"
+  _url="$(printf '%s' "$_b64" | base64 -d 2>/dev/null)" \
+    || fail bad_args "set-url argument is not valid base64"
+  printf '%s' "$_url" | grep -Eq "^https?://[A-Za-z0-9._~:/?#@!\$&()*+,;=%-]+$" \
+    || fail bad_args "url must be http(s) and contain no spaces or quotes"
+  _host="$(printf '%s' "$_url" | sed -E 's#^[a-z]+://([^/:?]+).*#\1#')"
+
+  acquire_lock
+  runtime_set '{"busy": "set-url"}'
+  _old_url=""
+  [ -s "$SUB_URL_FILE" ] && _old_url="$(cat "$SUB_URL_FILE")"
+  cp "$SUB_CACHE" "$SUB_CACHE.bak" 2>/dev/null || true
+  cp "$SUB_STAMP" "$SUB_STAMP.bak" 2>/dev/null || true
+
+  printf '%s\n' "$_url" | atomic_write "$SUB_URL_FILE" 600
+  _out="$(do_refresh force)"
+  _rc=$?
+  if [ "$_rc" -eq 0 ] && printf '%s' "$_out" | jq -e '.downloaded == true' >/dev/null 2>&1; then
+    rm -f "$SUB_CACHE.bak" "$SUB_STAMP.bak"
+    runtime_set '{"busy": null}'
+    oplog set-url "host=$_host"
+    printf '%s' "$_out" | jq -c --arg host "$_host" '. + {url_host: $host}'
+    return 0
+  fi
+
+  # New URL failed to download or parse: restore url, cache and server files.
+  if [ -n "$_old_url" ]; then
+    printf '%s\n' "$_old_url" | atomic_write "$SUB_URL_FILE" 600
+  fi
+  [ -f "$SUB_CACHE.bak" ] && mv "$SUB_CACHE.bak" "$SUB_CACHE"
+  [ -f "$SUB_STAMP.bak" ] && mv "$SUB_STAMP.bak" "$SUB_STAMP"
+  if [ -s "$SUB_CACHE" ]; then
+    decode_subscription && build_server_files || true
+  fi
+  runtime_set '{"busy": null, "subscription_error": null}'
+  oplog set-url "host=$_host FAILED, reverted"
+  fail subscription_download "download from the new URL failed; previous URL kept"
+}
+
+cmd_set_interval() {
+  case "$1" in
+    3600|14400|21600|43200|86400) : ;;
+    *) fail bad_args "interval must be one of 3600|14400|21600|43200|86400 seconds" ;;
+  esac
+  acquire_lock
+  [ -s "$CONFIG_FILE" ] || echo '{}' > "$CONFIG_FILE"
+  jq -c --argjson v "$1" '.refresh_min_interval_sec = $v' "$CONFIG_FILE" \
+    | atomic_write "$CONFIG_FILE" 644
+  oplog set-interval "$1"
+  jq -cn --argjson v "$1" '{ok: true, refresh_interval_sec: $v}'
 }
 
 cmd_check() {
@@ -220,6 +280,8 @@ case "$1" in
   list)    cmd_list ;;
   logs)    shift; cmd_logs "$@" ;;
   refresh) shift; cmd_refresh "$@" ;;
+  set-url) shift; cmd_set_url "$@" ;;
+  set-interval) shift; cmd_set_interval "$@" ;;
   check)   shift; cmd_check "$@" ;;
   mode)    shift; cmd_mode "$@" ;;
   select)  shift; cmd_select "$@" ;;
@@ -228,5 +290,5 @@ case "$1" in
   cron)    cmd_cron ;;
   render)  shift; cmd_render "$@" ;;
   migrate) cmd_migrate ;;
-  *) fail bad_args "usage: vpnctl status|list|logs|refresh|check|mode|select|enable|disable|cron|render|migrate" ;;
+  *) fail bad_args "usage: vpnctl status|list|logs|refresh|set-url|set-interval|check|mode|select|enable|disable|cron|render|migrate" ;;
 esac

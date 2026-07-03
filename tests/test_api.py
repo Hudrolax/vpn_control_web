@@ -74,6 +74,31 @@ async def test_select_validates_id(client):
     assert r.status_code == 200
 
 
+async def test_subscription_url_validates(client):
+    app.state.vpnctl.set_subscription_url.return_value = {"ok": True}
+
+    r = await client.post("/api/subscription/url", json={"url": "not a url"})
+    assert r.status_code == 422
+
+    r = await client.post("/api/subscription/url", json={"url": "https://ex.com/sub?a=1 ; id"})
+    assert r.status_code == 422
+
+    r = await client.post("/api/subscription/url", json={"url": "https://ex.com/sub?token=abc"})
+    assert r.status_code == 200
+    app.state.vpnctl.set_subscription_url.assert_awaited_with("https://ex.com/sub?token=abc")
+
+
+async def test_subscription_interval_validates(client):
+    app.state.vpnctl.set_refresh_interval.return_value = {"ok": True}
+
+    r = await client.post("/api/subscription/interval", json={"interval_sec": 1234})
+    assert r.status_code == 422
+
+    r = await client.post("/api/subscription/interval", json={"interval_sec": 14400})
+    assert r.status_code == 200
+    app.state.vpnctl.set_refresh_interval.assert_awaited_with(14400)
+
+
 async def test_dashboard_renders(client):
     r = await client.get("/")
     assert r.status_code == 200

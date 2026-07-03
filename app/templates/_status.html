@@ -24,6 +24,7 @@
     </div>
     <div class="kv"><div class="k">Подписка</div>
       <div class="v">{{ st.subscription.server_count }} серв.
+        {% if st.subscription.url_host %}<span class="muted">{{ st.subscription.url_host }}</span>{% endif %}
         <span class="muted">обновлена {{ st.subscription.last_refresh | ago }}</span></div>
     </div>
     {% if st.busy %}
@@ -42,6 +43,14 @@
         <option value="manual" {% if st.mode == "manual" %}selected{% endif %}>вручную</option>
       </select>
     </form>
+    <form hx-post="/actions/interval" hx-target="#status" hx-swap="innerHTML" style="display:inline">
+      <label class="muted">автообновление:</label>
+      <select name="interval_sec" onchange="this.form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}))">
+        {% for sec, label in [(3600, "1 час"), (14400, "4 часа"), (21600, "6 часов"), (43200, "12 часов"), (86400, "24 часа")] %}
+        <option value="{{ sec }}" {% if st.subscription.refresh_interval_sec == sec %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </form>
     {% if st.enabled %}
       <button class="danger" hx-post="/actions/disable" hx-target="#status" hx-swap="innerHTML"
               hx-confirm="Выключить VPN? Трафик клиентов пойдёт напрямую без туннеля.">Выключить VPN</button>
@@ -50,6 +59,17 @@
     {% endif %}
     <span class="muted">срез: {{ snap.fetched_at | ago }}</span>
   </div>
+
+  <details style="margin-top: 10px;">
+    <summary class="muted" style="cursor: pointer;">Сменить URL подписки</summary>
+    <form hx-post="/actions/subscription-url" hx-target="#status" hx-swap="innerHTML"
+          hx-confirm="Сменить подписку? Список серверов будет загружен по новому URL."
+          class="actions" style="margin-top: 8px;">
+      <input type="password" name="url" placeholder="https://…" required
+             autocomplete="off" style="min-width: 320px;">
+      <button type="submit">Применить</button>
+    </form>
+  </details>
   {% else %}
     <div class="muted">Нет данных от роутера{% if snap.error %}: {{ snap.error }}{% endif %}</div>
   {% endif %}

@@ -7,7 +7,13 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from .models import SERVER_ID_PATTERN, ModeRequest, SelectRequest
+from .models import (
+    SERVER_ID_PATTERN,
+    ModeRequest,
+    RefreshIntervalRequest,
+    SelectRequest,
+    SubscriptionUrlRequest,
+)
 from .vpnctl import VpnctlBusy, VpnctlError
 
 router = APIRouter()
@@ -135,6 +141,34 @@ async def action_check(request: Request):
 async def action_mode(request: Request, mode: str = Form(...)):
     body = ModeRequest(mode=mode)  # validates value
     message = await _mutate(request, lambda: request.app.state.vpnctl.set_mode(body.mode))
+    return await _render_status(request, message)
+
+
+@router.post("/actions/subscription-url", response_class=HTMLResponse)
+async def action_subscription_url(request: Request, url: str = Form(...)):
+    try:
+        body = SubscriptionUrlRequest(url=url.strip())
+    except ValueError:
+        return await _render_status(
+            request, "Некорректный URL подписки: нужен http(s) без пробелов и кавычек"
+        )
+    message = await _mutate(
+        request, lambda: request.app.state.vpnctl.set_subscription_url(body.url)
+    )
+    if message is None:
+        message = "Подписка обновлена по новому URL"
+    return await _render_status(request, message)
+
+
+@router.post("/actions/interval", response_class=HTMLResponse)
+async def action_interval(request: Request, interval_sec: int = Form(...)):
+    try:
+        body = RefreshIntervalRequest(interval_sec=interval_sec)
+    except ValueError:
+        return await _render_status(request, "Недопустимый период автообновления")
+    message = await _mutate(
+        request, lambda: request.app.state.vpnctl.set_refresh_interval(body.interval_sec)
+    )
     return await _render_status(request, message)
 
 
