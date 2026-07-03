@@ -94,6 +94,9 @@ cmd_set_url() {
   # metacharacters. Downloads immediately; reverts to the old URL on failure.
   _b64="$1"
   [ -n "$_b64" ] || fail bad_args "set-url requires a base64-encoded url"
+  # busybox grep can't cap length in the ssh whitelist ({n,m} maxes at 255),
+  # so the size limit lives here instead.
+  [ "${#_b64}" -le 2048 ] || fail bad_args "url is too long"
   _url="$(printf '%s' "$_b64" | base64 -d 2>/dev/null)" \
     || fail bad_args "set-url argument is not valid base64"
   printf '%s' "$_url" | grep -Eq "^https?://[A-Za-z0-9._~:/?#@!\$&()*+,;=%-]+$" \
