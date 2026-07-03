@@ -1,0 +1,12 @@
+{
+  "check_url": "https://www.gstatic.com/generate_204",
+  "check_timeout_sec": 8,
+  "socks_port": 10808,
+  "probe_port": 20808,
+  "refresh_min_interval_sec": 86400,
+  "auto_best": {
+    "improvement_pct": 35,
+    "degrade_ms": 400,
+    "min_hold_sec": 1800
+  }
+}

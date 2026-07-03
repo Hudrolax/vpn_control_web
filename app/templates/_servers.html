@@ -1,0 +1,37 @@
+<div class="panel">
+  <div class="actions" style="margin-bottom: 10px;">
+    <button class="secondary" hx-post="/actions/check" hx-target="#servers" hx-swap="innerHTML">Проверить все серверы</button>
+    {% if snap.status and snap.status.busy == "check" %}
+      <span class="badge warn">идёт проверка…</span>
+    {% endif %}
+  </div>
+  <table>
+    <thead>
+      <tr><th>Сервер</th><th>Адрес</th><th>Статус</th><th>Latency</th><th>Проверен</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for s in snap.servers %}
+      <tr class="{% if s.selected %}selected{% endif %}">
+        <td>{{ s.name or s.id }}{% if s.selected %} <span class="badge ok">активный</span>{% endif %}</td>
+        <td class="muted">{{ s.address or "—" }}{% if s.port %}:{{ s.port }}{% endif %}</td>
+        <td><span class="badge {{ s.status if s.status in ['ok','down'] else 'unchecked' }}">{{ s.status }}</span>
+            {% if s.last_error %}<span class="muted" title="{{ s.last_error }}">ⓘ</span>{% endif %}</td>
+        <td>{% if s.latency_ms is not none %}{{ s.latency_ms }} ms{% else %}—{% endif %}</td>
+        <td class="muted">{{ s.last_checked | ago }}</td>
+        <td>
+          {% if not s.selected %}
+          <form hx-post="/actions/select" hx-target="#servers" hx-swap="innerHTML"
+                hx-confirm="Переключить VPN на {{ s.name or s.id }}?" style="display:inline">
+            <input type="hidden" name="server_id" value="{{ s.id }}">
+            <button class="small secondary">Выбрать</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">Список серверов пуст</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if message %}<div class="msg">{{ message }}</div>{% endif %}
+</div>

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div id="status" hx-get="/partials/status" hx-trigger="every 15s" hx-swap="innerHTML">
+  {% include "_status.html" %}
+</div>
+
+<div id="servers" hx-get="/partials/servers" hx-trigger="every 15s" hx-swap="innerHTML">
+  {% include "_servers.html" %}
+</div>
+
+<div class="panel">
+  <details>
+    <summary>Лог операций</summary>
+    <div id="logs" hx-get="/partials/logs" hx-trigger="toggle from:closest details, every 30s" hx-swap="innerHTML">
+      <span class="muted">Загрузка…</span>
+    </div>
+  </details>
+</div>
+
+{% endblock %}

@@ -1,0 +1,19 @@
+{% if error %}
+  <div class="msg">Не удалось получить лог: {{ error }}</div>
+{% else %}
+<table>
+  <thead><tr><th>Время</th><th>Кто</th><th>Действие</th><th>Детали</th></tr></thead>
+  <tbody>
+    {% for e in entries %}
+    <tr>
+      <td class="muted">{{ e.ts | ago }}</td>
+      <td>{{ e.actor }}</td>
+      <td>{{ e.action }}</td>
+      <td class="muted">{{ e.detail or "" }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="muted">Лог пуст</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}

@@ -1,0 +1,57 @@
+{% set st = snap.status %}
+<div class="panel">
+  {% if snap.stale %}
+    <div class="stale">⚠ Данные устарели{% if snap.error %}: {{ snap.error }}{% endif %}
+      (обновлено {{ snap.fetched_at | ago }})</div>
+  {% endif %}
+  {% if st %}
+  <div class="row">
+    <div class="kv"><div class="k">VPN</div>
+      <div class="v">{% if st.enabled %}<span class="badge ok">включён</span>{% else %}<span class="badge down">выключен</span>{% endif %}</div>
+    </div>
+    <div class="kv"><div class="k">Режим</div><div class="v">{{ st.mode }}</div></div>
+    <div class="kv"><div class="k">Сервер</div>
+      <div class="v">{% if st.selected %}{{ st.selected.name or st.selected.id }}
+        <span class="muted">{{ st.selected.address or "" }}</span>{% else %}—{% endif %}</div>
+    </div>
+    <div class="kv"><div class="k">Здоровье</div>
+      <div class="v">
+        {% if st.selected_health %}
+          <span class="badge {{ st.selected_health.status if st.selected_health.status in ['ok','down'] else 'unchecked' }}">{{ st.selected_health.status }}</span>
+          {% if st.selected_health.latency_ms is not none %}{{ st.selected_health.latency_ms }} ms{% endif %}
+        {% else %}—{% endif %}
+      </div>
+    </div>
+    <div class="kv"><div class="k">Подписка</div>
+      <div class="v">{{ st.subscription.server_count }} серв.
+        <span class="muted">обновлена {{ st.subscription.last_refresh | ago }}</span></div>
+    </div>
+    {% if st.busy %}
+    <div class="kv"><div class="k">Операция</div><div class="v"><span class="badge warn">{{ st.busy }}…</span></div></div>
+    {% endif %}
+  </div>
+  {% if st.warning %}<div class="msg">⚠ {{ st.warning }}</div>{% endif %}
+  {% if st.subscription.last_error %}<div class="msg">Подписка: {{ st.subscription.last_error }}</div>{% endif %}
+
+  <div class="actions" style="margin-top: 14px;">
+    <button hx-post="/actions/refresh" hx-target="#status" hx-swap="innerHTML">Обновить подписку</button>
+    <form hx-post="/actions/mode" hx-target="#status" hx-swap="innerHTML" style="display:inline">
+      <select name="mode" onchange="this.form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}))">
+        <option value="auto-sticky" {% if st.mode == "auto-sticky" %}selected{% endif %}>auto-sticky</option>
+        <option value="auto-best" {% if st.mode == "auto-best" %}selected{% endif %}>auto-best</option>
+        <option value="manual" {% if st.mode == "manual" %}selected{% endif %}>manual</option>
+      </select>
+    </form>
+    {% if st.enabled %}
+      <button class="danger" hx-post="/actions/disable" hx-target="#status" hx-swap="innerHTML"
+              hx-confirm="Выключить VPN? Трафик клиентов пойдёт напрямую без туннеля.">Выключить VPN</button>
+    {% else %}
+      <button hx-post="/actions/enable" hx-target="#status" hx-swap="innerHTML">Включить VPN</button>
+    {% endif %}
+    <span class="muted">срез: {{ snap.fetched_at | ago }}</span>
+  </div>
+  {% else %}
+    <div class="muted">Нет данных от роутера{% if snap.error %}: {{ snap.error }}{% endif %}</div>
+  {% endif %}
+  {% if message %}<div class="msg">{{ message }}</div>{% endif %}
+</div>

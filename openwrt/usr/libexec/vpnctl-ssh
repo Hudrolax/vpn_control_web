@@ -1,0 +1,38 @@
+#!/bin/sh
+# Forced command for the vpn-control-web SSH key. Validates the entire
+# SSH_ORIGINAL_COMMAND against an anchored whitelist regex BEFORE any word
+# splitting, so shell metacharacters can never reach the interpreter.
+#
+# Phase gate: /etc/vpn-control/phase contains 1, 2 or 3; the whitelist grows
+# with the rollout phase.
+#   phase 1: status|list|logs
+#   phase 2: + refresh, check
+#   phase 3: + mode, select, enable, disable
+
+PHASE="$(cat /etc/vpn-control/phase 2>/dev/null || echo 1)"
+
+WHITELIST='^vpnctl (status|list|logs( [0-9]{1,3})?)$'
+
+case "$PHASE" in
+  2) WHITELIST='^vpnctl (status|list|logs( [0-9]{1,3})?|refresh( --force)?|check( sub-[A-Za-z0-9._-]{1,64})?)$' ;;
+  3) WHITELIST='^vpnctl (status|list|logs( [0-9]{1,3})?|refresh( --force)?|check( sub-[A-Za-z0-9._-]{1,64})?|mode (auto-sticky|auto-best|manual)|select sub-[A-Za-z0-9._-]{1,64}|enable|disable)$' ;;
+esac
+
+if [ -z "$SSH_ORIGINAL_COMMAND" ]; then
+  echo '{"ok":false,"error":"denied","message":"interactive access is not allowed"}'
+  exit 1
+fi
+
+if ! printf '%s' "$SSH_ORIGINAL_COMMAND" | grep -Eq "$WHITELIST"; then
+  logger -t vpnctl-ssh "DENIED cmd=$SSH_ORIGINAL_COMMAND"
+  echo '{"ok":false,"error":"denied","message":"command not in whitelist"}'
+  exit 1
+fi
+
+logger -t vpnctl-ssh "cmd=$SSH_ORIGINAL_COMMAND"
+
+# Safe to split now: the regex guarantees the command is exactly
+# "vpnctl <subcommand> [simple-args]".
+set -- $SSH_ORIGINAL_COMMAND
+shift  # drop the literal "vpnctl"
+VPNCTL_ACTOR=web exec /usr/libexec/vpnctl "$@"

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VPN Control — europeya</title>
+  <script src="/static/htmx.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a; --panel: #1e293b; --border: #334155;
+      --text: #e2e8f0; --muted: #94a3b8;
+      --ok: #4ade80; --down: #f87171; --warn: #facc15; --accent: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text);
+           font: 15px/1.5 system-ui, -apple-system, sans-serif; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px; }
+    h1 { font-size: 20px; margin: 0 0 16px; }
+    .panel { background: var(--panel); border: 1px solid var(--border);
+             border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; flex-wrap: wrap; gap: 24px; }
+    .kv .k { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .kv .v { font-size: 16px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    tr.selected td { background: rgba(56, 189, 248, .08); }
+    .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .badge.ok { background: rgba(74, 222, 128, .15); color: var(--ok); }
+    .badge.down { background: rgba(248, 113, 113, .15); color: var(--down); }
+    .badge.unchecked { background: rgba(148, 163, 184, .15); color: var(--muted); }
+    .badge.warn { background: rgba(250, 204, 21, .15); color: var(--warn); }
+    button { background: var(--accent); color: #082f49; border: 0; border-radius: 7px;
+             padding: 7px 14px; font-weight: 600; cursor: pointer; font-size: 14px; }
+    button:hover { filter: brightness(1.1); }
+    button.secondary { background: var(--border); color: var(--text); }
+    button.danger { background: var(--down); color: #450a0a; }
+    button.small { padding: 3px 10px; font-size: 12px; }
+    select { background: var(--panel); color: var(--text); border: 1px solid var(--border);
+             border-radius: 7px; padding: 6px 10px; font-size: 14px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .muted { color: var(--muted); }
+    .msg { color: var(--warn); margin-top: 8px; font-size: 14px; }
+    .stale { color: var(--warn); font-size: 13px; }
+    details summary { cursor: pointer; color: var(--muted); }
+    .htmx-request { opacity: .6; }
+    .spinner { display: none; }
+    .htmx-request .spinner, .htmx-request.spinner { display: inline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>VPN Control <span class="muted">— корпоративный OpenWrt</span></h1>
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

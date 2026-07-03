@@ -1,0 +1,19 @@
+services:
+  vpn_control_web:
+    build: .
+    image: vpn_control_web:latest
+    container_name: vpn_control_web
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      # Bind only to the management-LAN address; this is the access control.
+      - "192.168.2.22:8090:8090"
+    volumes:
+      - type: bind
+        source: ./ssh
+        target: /app/ssh
+        read_only: true
+      - type: bind
+        source: ./data
+        target: /app/data
+    mem_limit: 256m
