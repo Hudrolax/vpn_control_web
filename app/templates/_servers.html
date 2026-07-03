@@ -16,7 +16,8 @@
         <td class="muted">{{ s.address or "—" }}{% if s.port %}:{{ s.port }}{% endif %}</td>
         <td><span class="badge {{ s.status if s.status in ['ok','down'] else 'unchecked' }}">{{ s.status }}</span>
             {% if s.last_error %}<span class="muted" title="{{ s.last_error }}">ⓘ</span>{% endif %}</td>
-        <td>{% if s.latency_ms is not none %}{{ s.latency_ms }} ms{% else %}—{% endif %}</td>
+        <td>{% if s.latency_ms is not none %}{{ s.latency_ms }} ms{% else %}—{% endif %}
+            {% if sparks and s.id in sparks %}{{ sparks[s.id] | safe }}{% endif %}</td>
         <td class="muted">{{ s.last_checked | ago }}</td>
         <td>
           {% if not s.selected %}
