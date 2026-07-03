@@ -37,9 +37,9 @@
     <button hx-post="/actions/refresh" hx-target="#status" hx-swap="innerHTML">Обновить подписку</button>
     <form hx-post="/actions/mode" hx-target="#status" hx-swap="innerHTML" style="display:inline">
       <select name="mode" onchange="this.form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}))">
-        <option value="auto-sticky" {% if st.mode == "auto-sticky" %}selected{% endif %}>auto-sticky</option>
-        <option value="auto-best" {% if st.mode == "auto-best" %}selected{% endif %}>auto-best</option>
-        <option value="manual" {% if st.mode == "manual" %}selected{% endif %}>manual</option>
+        <option value="auto-sticky" {% if st.mode == "auto-sticky" %}selected{% endif %}>авто (закреплённый)</option>
+        <option value="auto-best" {% if st.mode == "auto-best" %}selected{% endif %}>авто (лучший)</option>
+        <option value="manual" {% if st.mode == "manual" %}selected{% endif %}>вручную</option>
       </select>
     </form>
     {% if st.enabled %}
