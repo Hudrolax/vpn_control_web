@@ -2,11 +2,14 @@
 # Renders the runtime xray config from persistent state at boot, before the
 # xray service (START=91) tries to read it. /var/etc is tmpfs, so without this
 # the office VPN would wait for the first cron tick after every reboot.
+#
+# procd-style oneshot: start_service performs the render inline and registers
+# no instances (modern rc.common always routes start through procd).
 
 START=90
-USE_PROCD=0
+USE_PROCD=1
 
-start() {
+start_service() {
   [ -x /usr/libexec/vpnctl ] || return 0
   state="/etc/vpn-control/state.json"
   [ -s "$state" ] || return 0
