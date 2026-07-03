@@ -1,6 +1,7 @@
 <div class="panel">
   <div class="actions" style="margin-bottom: 10px;">
-    <button class="secondary" hx-post="/actions/check" hx-target="#servers" hx-swap="innerHTML">Проверить все серверы</button>
+    <button class="secondary" hx-post="/actions/check" hx-target="#servers" hx-swap="innerHTML"
+            hx-sync="#servers:replace">Проверить все серверы</button>
     {% if snap.status and snap.status.busy == "check" %}
       <span class="badge warn">идёт проверка…</span>
     {% endif %}
@@ -22,6 +23,7 @@
         <td>
           {% if not s.selected %}
           <form hx-post="/actions/select" hx-target="#servers" hx-swap="innerHTML"
+                hx-sync="#servers:replace"
                 hx-confirm="Переключить VPN на {{ s.name or s.id }}?" style="display:inline">
             <input type="hidden" name="server_id" value="{{ s.id }}">
             <button class="small secondary">Выбрать</button>

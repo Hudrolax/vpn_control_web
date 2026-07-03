@@ -34,16 +34,21 @@
   {% if st.warning %}<div class="msg">⚠ {{ st.warning }}</div>{% endif %}
   {% if st.subscription.last_error %}<div class="msg">Подписка: {{ st.subscription.last_error }}</div>{% endif %}
 
+  {# hx-sync="#status:replace" — действие отменяет фоновый GET панели в полёте,
+     иначе его устаревший ответ перетирает результат действия. #}
   <div class="actions" style="margin-top: 14px;">
-    <button hx-post="/actions/refresh" hx-target="#status" hx-swap="innerHTML">Обновить подписку</button>
-    <form hx-post="/actions/mode" hx-target="#status" hx-swap="innerHTML" style="display:inline">
+    <button hx-post="/actions/refresh" hx-target="#status" hx-swap="innerHTML"
+            hx-sync="#status:replace">Обновить подписку</button>
+    <form hx-post="/actions/mode" hx-target="#status" hx-swap="innerHTML"
+          hx-sync="#status:replace" style="display:inline">
       <select name="mode" onchange="this.form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}))">
         <option value="auto-sticky" {% if st.mode == "auto-sticky" %}selected{% endif %}>авто (закреплённый)</option>
         <option value="auto-best" {% if st.mode == "auto-best" %}selected{% endif %}>авто (лучший)</option>
         <option value="manual" {% if st.mode == "manual" %}selected{% endif %}>вручную</option>
       </select>
     </form>
-    <form hx-post="/actions/interval" hx-target="#status" hx-swap="innerHTML" style="display:inline">
+    <form hx-post="/actions/interval" hx-target="#status" hx-swap="innerHTML"
+          hx-sync="#status:replace" style="display:inline">
       <label class="muted">автообновление:</label>
       <select name="interval_sec" onchange="this.form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}))">
         {% for sec, label in [(3600, "1 час"), (14400, "4 часа"), (21600, "6 часов"), (43200, "12 часов"), (86400, "24 часа")] %}
@@ -53,23 +58,14 @@
     </form>
     {% if st.enabled %}
       <button class="danger" hx-post="/actions/disable" hx-target="#status" hx-swap="innerHTML"
+              hx-sync="#status:replace"
               hx-confirm="Выключить VPN? Трафик клиентов пойдёт напрямую без туннеля.">Выключить VPN</button>
     {% else %}
-      <button hx-post="/actions/enable" hx-target="#status" hx-swap="innerHTML">Включить VPN</button>
+      <button hx-post="/actions/enable" hx-target="#status" hx-swap="innerHTML"
+              hx-sync="#status:replace">Включить VPN</button>
     {% endif %}
     <span class="muted">срез: {{ snap.fetched_at | ago }}</span>
   </div>
-
-  <details style="margin-top: 10px;">
-    <summary class="muted" style="cursor: pointer;">Сменить URL подписки</summary>
-    <form hx-post="/actions/subscription-url" hx-target="#status" hx-swap="innerHTML"
-          hx-confirm="Сменить подписку? Список серверов будет загружен по новому URL."
-          class="actions" style="margin-top: 8px;">
-      <input type="password" name="url" placeholder="https://…" required
-             autocomplete="off" style="min-width: 320px;">
-      <button type="submit">Применить</button>
-    </form>
-  </details>
   {% else %}
     <div class="muted">Нет данных от роутера{% if snap.error %}: {{ snap.error }}{% endif %}</div>
   {% endif %}
