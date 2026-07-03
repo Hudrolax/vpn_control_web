@@ -49,15 +49,19 @@ class Poller:
         """Request an immediate poll (after a mutation)."""
         self._wakeup.set()
 
+    async def poll_once(self) -> None:
+        """One synchronous poll; lets mutation handlers render fresh state."""
+        status = await self._client.status()
+        servers = (await self._client.list_servers()).servers
+        await self._cache.set(status, servers)
+        await self._db.record_checks(servers)
+
     async def _loop(self) -> None:
         tick = 0
         backoff = self._interval
         while True:
             try:
-                status = await self._client.status()
-                servers = (await self._client.list_servers()).servers
-                await self._cache.set(status, servers)
-                await self._db.record_checks(servers)
+                await self.poll_once()
                 backoff = self._interval
             except (VpnctlError, Exception) as exc:  # noqa: BLE001 - poller must survive
                 log.warning("poll failed: %s", exc)

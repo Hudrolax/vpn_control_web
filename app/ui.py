@@ -92,7 +92,12 @@ async def _mutate(request: Request, action) -> str | None:
         return f"Ошибка vpnctl: {exc.code}: {exc.message}"
     except Exception as exc:  # noqa: BLE001
         return f"Ошибка связи с роутером: {exc}"
-    request.app.state.poller.poke()
+    # Refresh the cache before rendering, otherwise the panel would show the
+    # pre-mutation state until the background poller catches up.
+    try:
+        await request.app.state.poller.poll_once()
+    except Exception:  # noqa: BLE001 - the poller will catch up on its own
+        request.app.state.poller.poke()
     return None
 
 
